@@ -1,0 +1,17 @@
+.modal-item {
+  padding-left: 10px;
+}
+.modal-item:hover {
+  font-size: larger;
+  background-color: #7cccd15e;
+}
+
+.place-info-container {
+  border: thick double #32a1ce;
+  
+}
+
+.place-detail-li:hover {
+  font-size: larger;
+  background-color: #7cccd15e;
+}
