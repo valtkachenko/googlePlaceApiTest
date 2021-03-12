@@ -1,18 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-/* eslint-disable */
-// import logo from './logo.svg';
-/* eslint-enable */
+import { useState } from "react";
 import "./App.css";
-// import { PlaceAutoComplete } from "./placeAutocomplete/place-autocomplete";
-import { MapWrapper } from "./map/Map";
 import { GoogleMapContainer } from "./map/MapWrapper";
-// import { useContext } from "react";
 import { NearbySearch } from './nearbySearch/nearbySearch';
 
-const API_KEY = "AIzaSyANcvMS5wV7NRtWVGYYL9i9xTnyYlRg0Tg";
-
 function App() {
-  // const WithMapWrapper = MapWrapper(GoogleMapContainer, { apiKey: API_KEY });
   const [map, setMap] = useState<google.maps.Map>(undefined as any);
 
   return (

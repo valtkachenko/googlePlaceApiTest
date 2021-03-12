@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { NearbySearch } from "../nearbySearch/nearbySearch";
+import { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { styles } from "./map.styles.json";
 
 type Props = {
   loader?: any;
@@ -21,6 +21,7 @@ export function GoogleMapContainer({ loader, setMap }: Props) {
           lat: 50.064192,
           lng: -130.605469,
         },
+        styles,
       });
 
       setMap(map);
