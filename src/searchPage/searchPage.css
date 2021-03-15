@@ -1,0 +1,31 @@
+.modal-item {
+  padding-left: 10px;
+}
+.modal-item:hover {
+  font-size: larger;
+  background-color: #7cccd15e;
+}
+
+.place-info-container {
+  border: thick double #32a1ce;
+  
+}
+
+.place-detail-li {
+  border: 1px solid black;
+}
+
+.place-icon {
+  height: 72px; 
+  width: 65px;
+}
+
+.place-detail-li:hover {
+  font-size: larger;
+  background-color: #7cccd15e;
+}
+
+.place-detail-li:hover .place-icon {
+  width: 75px !important;
+  height: 114px !important;
+}
