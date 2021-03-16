@@ -171,8 +171,8 @@ export function SearchPage({ map }: Props) {
               formatH = String(h) ? '' + (String(h).length === 1 ? '0' + h : h) : undefined;
               formatM =  String(m) ? (String(m).length === 1 ? '0' + m : String(m)) : undefined;
             }
-            console.log('minutes ', formatM, ' ', typeof formatM);
-            console.log('hours ', formatH, ' ', typeof formatH);
+            // console.log('minutes ', formatM, ' ', typeof formatM);
+            // console.log('hours ', formatH, ' ', typeof formatH);
 
             return {
               ...item,
@@ -196,10 +196,17 @@ export function SearchPage({ map }: Props) {
               distance: getDistanceBetweenTwo(location.lat, location.lng, destinationLat, destinationLng),
             };
           }
-          return place;
+          return { ...place, distance: undefined };
         } );
 
-        setResults(detailsWithDistance);
+        const sortedDWD = detailsWithDistance.sort( (place1, place2) => {
+          if (place1?.distance && place2?.distance) {
+            return  place1.distance - place2.distance;
+          }
+          return 0;
+        });
+
+        setResults(sortedDWD);
 
         const mrks: google.maps.Marker[] = [];
         for (let i = 0; i < resovedDetails.length; i++) {
