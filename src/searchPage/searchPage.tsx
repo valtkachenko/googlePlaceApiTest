@@ -1,9 +1,10 @@
-import { Dispatch, useEffect, useRef, useState } from "react";
+import React, { Dispatch, useEffect, useRef, useState } from "react";
 // import Switch from "react-switch";
 import { debounce } from "lodash";
-import { Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Dropdown, FormControl, ListGroup, Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import "./searchPage.css";
 import logo from "../geolocation.svg";
+import placesTypes from './placesTypes';
 
 type Props = {
   map: google.maps.Map;
@@ -27,7 +28,7 @@ type MoreDetailedRes = (google.maps.places.PlaceResult & {
   icon: string | undefined;
 })[];
 
-type PlaceType = "store" | "drugstore" | "food" | "clothing_store";
+type PlaceType = any;//"store" | "drugstore" | "food" | "clothing_store";
 
 export function SearchPage({ map }: Props) {
   const [address, setAddress] = useState<string>("");
@@ -266,6 +267,20 @@ export function SearchPage({ map }: Props) {
     });
   };
 
+  const formatDetails = (details: google.maps.places.PlaceResult) => {
+    return {
+      name: details?.name ?? '',
+      formatted_address: details?.formatted_address ?? '',
+      international_phone_number: details?.international_phone_number ?? '',
+      open_now: details?.opening_hours?.isOpen ?? '',
+      weekday_text: details?.opening_hours?.weekday_text ?? '',
+      rating: details?.rating ?? '',
+      place_id: details?.place_id ?? '',
+      business_status: details?.business_status ?? '',
+      photos: details?.photos ?? '',
+    }
+  }
+
   const selectSearchByType = () => {
     clearMarkers(markerss);
     setTimeout(setClick, 0, true);
@@ -352,6 +367,57 @@ export function SearchPage({ map }: Props) {
   };
 
   const inputRef = useRef<HTMLInputElement>(undefined as any);
+
+  // const CustomToggle = React.forwardRef<any, { onClick: () => void }>(({ children, onClick }, ref) => (
+  //   // <a
+  //   //   href=""
+  //   //   ref={ref}
+  //   //   onClick={(e) => {
+  //   //     e.preventDefault();
+  //   //     onClick(e);
+  //   //   }}
+  //   // >
+  //   //   {children}
+  //   //   &#x25bc;
+  //   // </a>
+  // ));
+  
+  // forwardRef again here!
+  // Dropdown needs access to the DOM of the Menu to measure it
+  type Props = {
+    children: React.ReactNode; 
+    style: any;
+    className: any;
+    'aria-labelledby': any;
+  }
+  const CustomMenu = React.forwardRef<any, Props>(
+    ({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
+      const [value, setValue] = useState('');
+  
+      return (
+        <div
+          ref={ref}
+          style={style}
+          className={className}
+          aria-labelledby={labeledBy}
+        >
+          <FormControl
+            autoFocus
+            className="mx-3 my-2 w-auto"
+            placeholder="Type to filter..."
+            onChange={(e) => setValue(e.target.value)}
+            value={value}
+          />
+          <ul className="list-unstyled">
+            {React.Children.toArray(children).filter(
+              (child) =>
+                !value// || child.props.children.toLowerCase().startsWith(value),
+            )}
+          </ul>
+        </div>
+      );
+    },
+  );
 
   return (
     <>
@@ -448,7 +514,7 @@ export function SearchPage({ map }: Props) {
         </div>
       </div> */}
       <div className="store-type pt-2 w-75 d-flex justify-content-between">
-        <div
+        {/* <div
           className="btn-group w-100"
           role="group"
           aria-label="Basic outlined example"
@@ -488,7 +554,35 @@ export function SearchPage({ map }: Props) {
               food
             </ToggleButton>
           </ToggleButtonGroup>
+        </div> */}
+        <div className="place-type w-100">
+          <Dropdown
+            onSelect={(e) => {
+              if (e) {
+                setbtnValue(e);
+                selectSearchByType();
+              }
+            }}
+          >
+            <Dropdown.Toggle
+              variant="outline-info"
+              id="dropdown-custom-components"
+              className="w-100"
+            >
+              Select place type ...
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="w-100">
+              {placesTypes.map((type) => (
+                <Dropdown.Item eventKey={type}>{type}</Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
+        {/* <div>
+        <ListGroup>
+          {placesTypes.map( type => <ListGroup.Item>{type}</ListGroup.Item> )}
+        </ListGroup>
+        </div> */}
       </div>
       <div>
         {/* <button 
@@ -508,7 +602,7 @@ export function SearchPage({ map }: Props) {
               key={index}
               className="place-detail-li container d-flex p-0"
               onClick={async () => {
-                const details = await getDetails(item, map);
+                const details = item; //await getDetails(item, map);
                 if (details) {
                   setPlaceDetails(details);
                   handleShow1();
@@ -526,9 +620,7 @@ export function SearchPage({ map }: Props) {
                   )}
                 </div>
                 <p className="col-8 w-100 h-100">
-                  <strong>
-                    {item.name}
-                  </strong>
+                  <strong>{item.name}</strong>
                   <br />
                   {item.formatted_address}
                 </p>
@@ -539,9 +631,9 @@ export function SearchPage({ map }: Props) {
                       ":" +
                       item?.openHours?.minutes) ||
                     "no schedule"}
-                    <strong style={{ display: "block" }}>
-                      {item.distance?.toFixed(2) + " km" || '-'}
-                    </strong>
+                  <strong style={{ display: "block" }}>
+                    {item.distance?.toFixed(2) + " km" || "-"}
+                  </strong>
                 </p>
               </div>
             </div>
@@ -553,7 +645,7 @@ export function SearchPage({ map }: Props) {
         </Modal.Header>
         <Modal.Body>
           <pre className="modal-item2">
-            {JSON.stringify({ ...placeDetails }, null, 2)}
+            {JSON.stringify(formatDetails(placeDetails), null, 2)}
           </pre>
         </Modal.Body>
       </Modal>
