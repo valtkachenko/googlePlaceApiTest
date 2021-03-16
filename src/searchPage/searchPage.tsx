@@ -123,7 +123,7 @@ export function SearchPage({ map }: Props) {
         //   }
         // )[] = moreDetailedRes.filter(el => el !== null);
         const service = new google.maps.places.PlacesService(map);
-        console.log('result ', results);
+        //console.log('result ', results);
         
         const moreDetailedRes = await Promise.allSettled(
           results.map(async (place, index) => {
@@ -151,23 +151,28 @@ export function SearchPage({ map }: Props) {
           
           return prev;
         }, []);
-        console.log('resovedDetails: ', resovedDetails);
+        //console.log('resovedDetails: ', resovedDetails);
         const resovedDetailsWithOpenHours = resovedDetails.map( item => { 
           if (item?.opening_hours?.periods) {
             let h = item?.opening_hours?.periods[DAY_OF_WEEK]?.close?.hours;
-            let h1 = h ? '' + (String(h).length === 1 ? '0' + h : h) : undefined;
-
             let m = item?.opening_hours?.periods[DAY_OF_WEEK]?.close?.minutes;
-            //m = String(m).length === 1 ? '0' + m : m;
-            let m1 = m ? '' + (String(m).length === 1 ? '0' + m : m) : undefined;
-            console.log('asddasdasdasd ', m1);
-            
+
+            let formatH;
+            let formatM;
+
+            if ((h || h === 0) && (m || m === 0)) {
+              
+              formatH = String(h) ? '' + (String(h).length === 1 ? '0' + h : h) : undefined;
+              formatM =  String(m) ? (String(m).length === 1 ? '0' + m : String(m)) : undefined;
+            }
+            console.log('minutes ', formatM, ' ', typeof formatM);
+            console.log('hours ', formatH, ' ', typeof formatH);
 
             return {
               ...item,
               openHours: {
-                hours: h1,
-                minutes: m1,
+                hours: formatH,
+                minutes: formatM,
               }
             }
           }
@@ -321,6 +326,8 @@ export function SearchPage({ map }: Props) {
 
   const inputRef = useRef<HTMLInputElement>(undefined as any);
 
+  const r = { r1: undefined };
+
   return (
     <>
       <div
@@ -467,14 +474,14 @@ export function SearchPage({ map }: Props) {
         </button> */}
       </div>
       <div
-        className="place-info-container w-100 h-50 mt-4"
+        className="place-info-container w-75 h-50 mt-4"
         style={{ overflowY: "scroll" }}
       >
         {results &&
           results.map((item, index) => (
             <div
               key={index}
-              className="place-detail-li d-flex justify-content-between"
+              className="place-detail-li container d-flex p-0"
               onClick={async () => {
                 const details = await getDetails(item, map);
                 if (details) {
@@ -483,18 +490,21 @@ export function SearchPage({ map }: Props) {
                 }
               }}
             >
-              {item.icon && (
-                <div className="place-photo pr-2">
-                  <img className="place-icon" src={item.icon} alt="alter"></img>
+              <div className="row w-100">
+                <div className="col-2 place-photo pr-2 w-100 h-100">
+                  {item.icon && (
+                    <img className="place-icon" src={item.icon} alt="alter"></img>
+                  )}
                 </div>
-              )}
-              <p>
-              {item.formatted_address}
-              </p>
-              {/* {String(item.opening_hours?.periods && item.opening_hours.periods[DAY_OF_WEEK].close?.time).match(/.{1,2}/g)?.splice(1,0,":")} */}
-              <p>
-                { ('open until ' + item?.openHours?.hours + ":" + item?.openHours?.minutes) }
-              </p>)
+                <p className="col-8 w-100 h-100">
+                {item.formatted_address}
+                </p>
+                {/* {String(item.opening_hours?.periods && item.opening_hours.periods[DAY_OF_WEEK].close?.time).match(/.{1,2}/g)?.splice(1,0,":")} */} 
+                <p className="col-2 d-flex justify-content-start">
+                  {item?.openHours?.hours && ('open until ' + item?.openHours?.hours + ":" + item?.openHours?.minutes) 
+                  || 'no schedule'}
+                </p>
+              </div>
             </div>
           ))}
       </div>
