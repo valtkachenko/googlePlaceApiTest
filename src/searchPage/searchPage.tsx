@@ -41,7 +41,13 @@ export function SearchPage({ map }: Props) {
   const [show1, setShow1] = useState<boolean>(false);
   const [btnvalue, setbtnValue] = useState<PlaceType>("store");
   const [results, setResults] = useState<
-    (google.maps.places.PlaceResult & { icon: string | undefined; } & { openHours?: { hours: string | undefined; minutes: string | undefined; } })[]
+    (google.maps.places.PlaceResult & { icon: string | undefined } 
+    & {
+      openHours?: { hours: string | undefined; minutes: string | undefined };
+    }
+    & {
+      distance?: number | undefined;
+    })[]
   >(undefined as any);
   const [
     placeDetails,
@@ -179,7 +185,21 @@ export function SearchPage({ map }: Props) {
           return item;
         });
 
-        setResults(resovedDetailsWithOpenHours);
+        const detailsWithDistance = resovedDetailsWithOpenHours.map( place => {
+          const destinationLat = place.geometry?.location?.lat();
+          const destinationLng =  place.geometry?.location?.lng();
+
+          if (destinationLat && destinationLng) {
+            
+            return {
+              ...place,
+              distance: getDistanceBetweenTwo(location.lat, location.lng, destinationLat, destinationLng),
+            };
+          }
+          return place;
+        } );
+
+        setResults(detailsWithDistance);
 
         const mrks: google.maps.Marker[] = [];
         for (let i = 0; i < resovedDetails.length; i++) {
@@ -325,8 +345,6 @@ export function SearchPage({ map }: Props) {
   };
 
   const inputRef = useRef<HTMLInputElement>(undefined as any);
-
-  const r = { r1: undefined };
 
   return (
     <>
@@ -493,16 +511,30 @@ export function SearchPage({ map }: Props) {
               <div className="row w-100">
                 <div className="col-2 place-photo pr-2 w-100 h-100">
                   {item.icon && (
-                    <img className="place-icon" src={item.icon} alt="alter"></img>
+                    <img
+                      className="place-icon"
+                      src={item.icon}
+                      alt="alter"
+                    ></img>
                   )}
                 </div>
                 <p className="col-8 w-100 h-100">
-                {item.formatted_address}
+                  <strong>
+                    {item.name}
+                  </strong>
+                  <br />
+                  {item.formatted_address}
                 </p>
-                {/* {String(item.opening_hours?.periods && item.opening_hours.periods[DAY_OF_WEEK].close?.time).match(/.{1,2}/g)?.splice(1,0,":")} */} 
-                <p className="col-2 d-flex justify-content-start">
-                  {item?.openHours?.hours && ('open until ' + item?.openHours?.hours + ":" + item?.openHours?.minutes) 
-                  || 'no schedule'}
+                <p className="col-2 d-flex d-flex align-items-start flex-column">
+                  {(item?.openHours?.hours &&
+                    "open until " +
+                      item?.openHours?.hours +
+                      ":" +
+                      item?.openHours?.minutes) ||
+                    "no schedule"}
+                    <strong style={{ display: "block" }}>
+                      {item.distance?.toFixed(2) + " km" || '-'}
+                    </strong>
                 </p>
               </div>
             </div>
@@ -657,4 +689,24 @@ function computeDistance({
     },
     callback
   );
+}
+
+function degreesToRadians(degrees: number) {
+  return degrees * Math.PI / 180;
+}
+
+function getDistanceBetweenTwo(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const earthRadiusKm = 6371;
+
+  const dLat = degreesToRadians(lat2-lat1);
+  const dLon = degreesToRadians(lon2-lon1);
+
+  lat1 = degreesToRadians(lat1);
+  lat2 = degreesToRadians(lat2);
+
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return earthRadiusKm * c;
 }
