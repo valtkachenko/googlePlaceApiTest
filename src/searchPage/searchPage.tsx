@@ -26,7 +26,7 @@ type FormatedDetails = {
   name: string;
   formatted_address: string;
   international_phone_number: string;
-  open_now: string | ((date?: Date | undefined) => boolean | undefined);
+  open_now: string | boolean;
   weekday_text: string | string[];
   rating: string | number;
   place_id: string;
@@ -308,7 +308,7 @@ export function SearchPage({ map }: Props) {
       name: details?.name ?? "",
       formatted_address: details?.formatted_address ?? "",
       international_phone_number: details?.international_phone_number ?? "",
-      open_now: details?.opening_hours?.isOpen ?? "",
+      open_now: details?.opening_hours?.isOpen() ?? "",
       weekday_text: details?.opening_hours?.weekday_text ?? "",
       rating: details?.rating ?? "",
       place_id: details?.place_id ?? "",
