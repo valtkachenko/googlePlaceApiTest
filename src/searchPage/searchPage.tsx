@@ -1,10 +1,17 @@
 import React, { Dispatch, useEffect, useRef, useState } from "react";
 // import Switch from "react-switch";
 import { debounce } from "lodash";
-import { Dropdown, FormControl, ListGroup, Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import {
+  Dropdown,
+  FormControl,
+  ListGroup,
+  Modal,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "react-bootstrap";
 import "./searchPage.css";
 import logo from "../geolocation.svg";
-import placesTypes from './placesTypes';
+import placesTypes from "./placesTypes";
 
 type Props = {
   map: google.maps.Map;
@@ -13,6 +20,18 @@ type Props = {
 type PlaceLocation = {
   lat: () => number;
   lng: () => number;
+};
+
+type FormatedDetails = {
+  name: string;
+  formatted_address: string;
+  international_phone_number: string;
+  open_now: string | ((date?: Date | undefined) => boolean | undefined);
+  weekday_text: string | string[];
+  rating: string | number;
+  place_id: string;
+  business_status: string;
+  photos: string | google.maps.places.PlacePhoto[];
 };
 
 interface GetDetails {
@@ -24,11 +43,7 @@ interface GetDetails {
   ): Promise<any>; //google.maps.places.PlaceResult | null;
 }
 
-type MoreDetailedRes = (google.maps.places.PlaceResult & {
-  icon: string | undefined;
-})[];
-
-type PlaceType = any;//"store" | "drugstore" | "food" | "clothing_store";
+type PlaceType = any; //"store" | "drugstore" | "food" | "clothing_store";
 
 export function SearchPage({ map }: Props) {
   const [address, setAddress] = useState<string>("");
@@ -42,11 +57,9 @@ export function SearchPage({ map }: Props) {
   const [show1, setShow1] = useState<boolean>(false);
   const [btnvalue, setbtnValue] = useState<PlaceType>("store");
   const [results, setResults] = useState<
-    (google.maps.places.PlaceResult & { icon: string | undefined } 
-    & {
+    (google.maps.places.PlaceResult & { icon: string | undefined } & {
       openHours?: { hours: string | undefined; minutes: string | undefined };
-    }
-    & {
+    } & {
       distance?: number | undefined;
     })[]
   >(undefined as any);
@@ -54,6 +67,10 @@ export function SearchPage({ map }: Props) {
     placeDetails,
     setPlaceDetails,
   ] = useState<google.maps.places.PlaceResult>(undefined as any);
+  const [
+    formatedPlaceDetails,
+    setFormatedlaceDetails,
+  ] = useState<FormatedDetails>(undefined as any);
   const [markerss, setMarkers] = useState<google.maps.Marker[]>([]);
   const [isClick, setClick] = useState(false);
   const [sorted, setSorted] = useState<google.maps.places.PlaceResult[]>(
@@ -61,6 +78,15 @@ export function SearchPage({ map }: Props) {
   );
 
   const DAY_OF_WEEK = new Date().getDay();
+
+  useEffect(() => {
+    if (formatedPlaceDetails) {
+      return handleShow1();
+    }
+    if (placeDetails) {
+      setFormatedlaceDetails(formatDetails(placeDetails));
+    }
+  }, [placeDetails, formatedPlaceDetails]);
 
   useEffect(() => {
     if (sorted) {
@@ -96,6 +122,9 @@ export function SearchPage({ map }: Props) {
     type?: PlaceType,
     defaultRequest?: boolean
   ) => {
+    if (!placeLocation?.lat()) {
+      return;
+    }
     const location = { lat: placeLocation.lat(), lng: placeLocation.lng() };
     const callback = async (
       results: google.maps.places.PlaceResult[] | null,
@@ -131,13 +160,12 @@ export function SearchPage({ map }: Props) {
         // )[] = moreDetailedRes.filter(el => el !== null);
         const service = new google.maps.places.PlacesService(map);
         //console.log('result ', results);
-        
+
         const moreDetailedRes = await Promise.allSettled(
           results.map(async (place, index) => {
-            const details = await getDetails(place, map, index, service)
+            const details = await getDetails(place, map, index, service);
 
             if (details) {
-              
               const detailsWithPhoto = {
                 ...details,
                 icon:
@@ -150,16 +178,17 @@ export function SearchPage({ map }: Props) {
           })
         );
 
-        const resovedDetails: (google.maps.places.PlaceResult & { icon: string | undefined })[] = moreDetailedRes.reduce( (prev: any, current) => {
-          
-          if (current.status === 'fulfilled') {
+        const resovedDetails: (google.maps.places.PlaceResult & {
+          icon: string | undefined;
+        })[] = moreDetailedRes.reduce((prev: any, current) => {
+          if (current.status === "fulfilled") {
             return [...prev, current.value];
           }
-          
+
           return prev;
         }, []);
         //console.log('resovedDetails: ', resovedDetails);
-        const resovedDetailsWithOpenHours = resovedDetails.map( item => { 
+        const resovedDetailsWithOpenHours = resovedDetails.map((item) => {
           if (item?.opening_hours?.periods) {
             let h = item?.opening_hours?.periods[DAY_OF_WEEK]?.close?.hours;
             let m = item?.opening_hours?.periods[DAY_OF_WEEK]?.close?.minutes;
@@ -168,9 +197,14 @@ export function SearchPage({ map }: Props) {
             let formatM;
 
             if ((h || h === 0) && (m || m === 0)) {
-              
-              formatH = String(h) ? '' + (String(h).length === 1 ? '0' + h : h) : undefined;
-              formatM =  String(m) ? (String(m).length === 1 ? '0' + m : String(m)) : undefined;
+              formatH = String(h)
+                ? "" + (String(h).length === 1 ? "0" + h : h)
+                : undefined;
+              formatM = String(m)
+                ? String(m).length === 1
+                  ? "0" + m
+                  : String(m)
+                : undefined;
             }
             // console.log('minutes ', formatM, ' ', typeof formatM);
             // console.log('hours ', formatH, ' ', typeof formatH);
@@ -180,29 +214,33 @@ export function SearchPage({ map }: Props) {
               openHours: {
                 hours: formatH,
                 minutes: formatM,
-              }
-            }
+              },
+            };
           }
           return item;
         });
 
-        const detailsWithDistance = resovedDetailsWithOpenHours.map( place => {
+        const detailsWithDistance = resovedDetailsWithOpenHours.map((place) => {
           const destinationLat = place.geometry?.location?.lat();
-          const destinationLng =  place.geometry?.location?.lng();
+          const destinationLng = place.geometry?.location?.lng();
 
           if (destinationLat && destinationLng) {
-            
             return {
               ...place,
-              distance: getDistanceBetweenTwo(location.lat, location.lng, destinationLat, destinationLng),
+              distance: getDistanceBetweenTwo(
+                location.lat,
+                location.lng,
+                destinationLat,
+                destinationLng
+              ),
             };
           }
           return { ...place, distance: undefined };
-        } );
+        });
 
-        const sortedDWD = detailsWithDistance.sort( (place1, place2) => {
+        const sortedDWD = detailsWithDistance.sort((place1, place2) => {
           if (place1?.distance && place2?.distance) {
-            return  place1.distance - place2.distance;
+            return place1.distance - place2.distance;
           }
           return 0;
         });
@@ -218,7 +256,6 @@ export function SearchPage({ map }: Props) {
           mrks.push(marker);
         }
         setMarkers(mrks);
-      
       }
     };
 
@@ -239,7 +276,6 @@ export function SearchPage({ map }: Props) {
     index = 1,
     service
   ) => {
-
     return new Promise((res, rej) => {
       const placeId = result.place_id;
       const request = placeId && {
@@ -269,17 +305,17 @@ export function SearchPage({ map }: Props) {
 
   const formatDetails = (details: google.maps.places.PlaceResult) => {
     return {
-      name: details?.name ?? '',
-      formatted_address: details?.formatted_address ?? '',
-      international_phone_number: details?.international_phone_number ?? '',
-      open_now: details?.opening_hours?.isOpen ?? '',
-      weekday_text: details?.opening_hours?.weekday_text ?? '',
-      rating: details?.rating ?? '',
-      place_id: details?.place_id ?? '',
-      business_status: details?.business_status ?? '',
-      photos: details?.photos ?? '',
-    }
-  }
+      name: details?.name ?? "",
+      formatted_address: details?.formatted_address ?? "",
+      international_phone_number: details?.international_phone_number ?? "",
+      open_now: details?.opening_hours?.isOpen ?? "",
+      weekday_text: details?.opening_hours?.weekday_text ?? "",
+      rating: details?.rating ?? "",
+      place_id: details?.place_id ?? "",
+      business_status: details?.business_status ?? "",
+      photos: details?.photos ?? "",
+    };
+  };
 
   const selectSearchByType = () => {
     clearMarkers(markerss);
@@ -381,19 +417,19 @@ export function SearchPage({ map }: Props) {
   //   //   &#x25bc;
   //   // </a>
   // ));
-  
+
   // forwardRef again here!
   // Dropdown needs access to the DOM of the Menu to measure it
   type Props = {
-    children: React.ReactNode; 
+    children: React.ReactNode;
     style: any;
     className: any;
-    'aria-labelledby': any;
-  }
+    "aria-labelledby": any;
+  };
   const CustomMenu = React.forwardRef<any, Props>(
-    ({ children, style, className, 'aria-labelledby': labeledBy }, ref) => {
-      const [value, setValue] = useState('');
-  
+    ({ children, style, className, "aria-labelledby": labeledBy }, ref) => {
+      const [value, setValue] = useState("");
+
       return (
         <div
           ref={ref}
@@ -410,13 +446,12 @@ export function SearchPage({ map }: Props) {
           />
           <ul className="list-unstyled">
             {React.Children.toArray(children).filter(
-              (child) =>
-                !value// || child.props.children.toLowerCase().startsWith(value),
+              (child) => !value // || child.props.children.toLowerCase().startsWith(value),
             )}
           </ul>
         </div>
       );
-    },
+    }
   );
 
   return (
@@ -602,10 +637,11 @@ export function SearchPage({ map }: Props) {
               key={index}
               className="place-detail-li container d-flex p-0"
               onClick={async () => {
-                const details = item; //await getDetails(item, map);
-                if (details) {
-                  setPlaceDetails(details);
-                  handleShow1();
+                if (item) {
+                  setPlaceDetails(item);
+                  //setTimeout(formatDetails, 0, placeDetails);
+                  //setTimeout(handleShow1, 1);
+                  // handleShow1();
                 }
               }}
             >
@@ -645,7 +681,11 @@ export function SearchPage({ map }: Props) {
         </Modal.Header>
         <Modal.Body>
           <pre className="modal-item2">
-            {JSON.stringify(formatDetails(placeDetails), null, 2)}
+            {formatedPlaceDetails &&
+              Object.entries(formatedPlaceDetails).map((entrie, index) => {
+                const [key, value] = entrie;
+                return <p key={index}>{key + ": " + value}</p>;
+              })}
           </pre>
         </Modal.Body>
       </Modal>
@@ -663,6 +703,12 @@ function findPlaceByAdress(
 
   geocoder.geocode({ address: value }, function (results, status) {
     if (status === "OK" && results) {
+      console.log(
+        "location: ",
+        results[0].geometry.location.lat(),
+        results[0].geometry.location.lng()
+      );
+
       setPredictions(results);
     } else {
       alert(
@@ -791,21 +837,27 @@ function computeDistance({
 }
 
 function degreesToRadians(degrees: number) {
-  return degrees * Math.PI / 180;
+  return (degrees * Math.PI) / 180;
 }
 
-function getDistanceBetweenTwo(lat1: number, lon1: number, lat2: number, lon2: number) {
+function getDistanceBetweenTwo(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
   const earthRadiusKm = 6371;
 
-  const dLat = degreesToRadians(lat2-lat1);
-  const dLon = degreesToRadians(lon2-lon1);
+  const dLat = degreesToRadians(lat2 - lat1);
+  const dLon = degreesToRadians(lon2 - lon1);
 
   lat1 = degreesToRadians(lat1);
   lat2 = degreesToRadians(lat2);
 
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return earthRadiusKm * c;
 }

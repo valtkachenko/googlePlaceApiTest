@@ -16,10 +16,10 @@ export function GoogleMapContainer({ loader, setMap }: Props) {
   useEffect(() => {
     if (mapRef.current) {
       const map = new google.maps.Map(mapRef.current, {
-        zoom: 6,
+        zoom: 12,
         center: {
-          lat: 50.064192,
-          lng: -130.605469,
+          lat: 55.735222,
+          lng: 12.508245,
         },
         styles,
       });
