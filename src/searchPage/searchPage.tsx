@@ -31,7 +31,7 @@ type FormatedDetails = {
   rating: string | number;
   place_id: string;
   business_status: string;
-  photos: string | google.maps.places.PlacePhoto[];
+  photos: google.maps.places.PlacePhoto[];
 };
 
 interface GetDetails {
@@ -313,7 +313,7 @@ export function SearchPage({ map }: Props) {
       rating: details?.rating ?? "",
       place_id: details?.place_id ?? "",
       business_status: details?.business_status ?? "",
-      photos: details?.photos ?? "",
+      photos: details?.photos ?? [],
     };
   };
 
@@ -682,11 +682,31 @@ export function SearchPage({ map }: Props) {
         <Modal.Body>
           <pre className="modal-item2">
             {formatedPlaceDetails &&
-              Object.entries(formatedPlaceDetails).map((entrie, index) => {
-                const [key, value] = entrie;
+              Object.entries(formatedPlaceDetails).map((entry, index) => {
+                const [key, value] = entry;
+                if (key === "photos") {
+                  return;
+                }
                 return <p key={index}>{key + ": " + value}</p>;
               })}
           </pre>
+          <div>
+            photos:
+            {formatedPlaceDetails &&
+              formatedPlaceDetails.photos.map((el) => {
+                return (
+                  <img
+                    src={el.getUrl({ maxWidth: 400, maxHeight: 400 })}
+                    style={{
+                      height: "100px",
+                      width: "100px",
+                      paddingLeft: "5px",
+                    }}
+                    alt="React Logo"
+                  />
+                );
+              })}
+          </div>
         </Modal.Body>
       </Modal>
     </>
