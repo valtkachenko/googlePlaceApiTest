@@ -261,7 +261,7 @@ export function SearchPage({ map }: Props) {
 
     const request = {
       location,
-      radius: 2000,
+      radius: 10000,
       query: defaultRequest ? "" : storeName,
       type: type ?? "store",
     };
@@ -687,7 +687,7 @@ export function SearchPage({ map }: Props) {
                 if (key === "photos") {
                   return;
                 }
-                return <p key={index}>{key + ": " + value}</p>;
+                return <p key={index}>{key + ": " + String(value)}</p>;
               })}
           </pre>
           <div>
